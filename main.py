@@ -35,17 +35,21 @@ models.Base.metadata.create_all(bind=engine)
 # ---------------------------------------------------------------------------
 app = FastAPI(title="Lumora Emotion Detection API", version="2.0.0")
 
-raw_origins = os.getenv("ALLOWED_ORIGINS", "*")
-origins = [o.strip() for o in raw_origins.split(",")]
+@app.get("/")
+def read_root():
+    return {"status": "Lumora Backend is running successfully!"}
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],      # Open the gates to ALL Vercel preview URLs
-    allow_credentials=False,  # Turn off strict cookie rules (we use localStorage anyway)
+    allow_origins=[
+        "http://localhost:5173", 
+        "https://lumora-frontend-two.vercel.app",
+        "https://lumora-frontend-git-main-abrardatainsight-bytes-projects.vercel.app"
+    ],
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
 # ---------------------------------------------------------------------------
 # Lazy-load ViT model (on first use, not at startup)
 # ---------------------------------------------------------------------------
