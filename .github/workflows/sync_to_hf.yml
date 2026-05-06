@@ -1,0 +1,30 @@
+name: Sync to Hugging Face Space
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  sync-to-hub:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Prepare Clean Push
+        run: |
+          # Delete the GitHub Git history so Hugging Face doesn't conflict with the old repo
+          rm -rf .git
+
+          # Create a fresh, clean Git history just for Hugging Face
+          git init -b main
+          git config user.name "GitHub Action"
+          git config user.email "action@github.com"
+          git add .
+          git commit -m "Clean sync from new repo to Hugging Face"
+          
+      - name: Push to Hugging Face
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          git remote add huggingface https://rabbydatainsight:$HF_TOKEN@huggingface.co/spaces/rabbydatainsight/lumora_backend
+          git push huggingface main --force
