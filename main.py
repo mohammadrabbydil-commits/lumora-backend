@@ -206,31 +206,30 @@ def check_trigger(company: str = Query(...), db: Session = Depends(get_db)):
 # ML inference
 # ---------------------------------------------------------------------------
 @app.post("/analyze")
-def analyze_emotion(
+async def analyze_emotion(
     username: str = Form(...),
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
 ):
     try:
-        # BUG FIX: Verify the user exists and is actually an employee
-        user = db.query(models.User).filter(models.User.username == username).first()
-        if not user or user.role != "employee":
-            return {"status": "ignored", "message": "Only employees can record emotions."}
-
-        image_bytes = file.file.read()
+        # Safely await the complete file stream before processing
+        image_bytes = await file.read() 
+        
+        # Process the image
         image = Image.open(io.BytesIO(image_bytes)).convert("RGB")
-        classifier = get_emotion_classifier()
-        predictions = classifier(image)
+        predictions = emotion_classifier(image)
         top = predictions[0]
         label = normalise_label(top["label"])
         score = float(top["score"])
 
+        # Save to DB
         db.add(models.EmotionLog(
             employee_username=username,
             emotion_text=label,
             raw_score=score,
         ))
         db.commit()
+        
         return {"status": "success", "emotion": label, "raw_score": score}
 
     except Exception as exc:
